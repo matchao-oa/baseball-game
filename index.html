@@ -2,19 +2,30 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>멀티 숫자 야구</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background-color: #f0f8f5; padding-top: 50px; }
-        .container { background: white; padding: 20px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 350px; }
-        input { padding: 10px; font-size: 16px; width: 120px; border: 2px solid #3cb371; border-radius: 5px; margin-bottom: 10px; }
-        button { padding: 10px 20px; font-size: 16px; background-color: #ddffdd; color: #444447; border: none; border-radius: 5px; cursor: pointer; margin: 5px; font-weight: bold; }
+        body { font-family: 'Pretendard', sans-serif; text-align: center; background-color: #f0f8f5; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { background: white; padding: 25px 15px; border-radius: 20px; display: block; max-width: 400px; margin: 0 auto; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        h2 { color: #2e8b57; margin-bottom: 25px; font-size: 24px; }
+        
+        /* 모바일에서 누르기 편한 큰 입력창과 버튼 */
+        input { padding: 15px; font-size: 18px; width: 80%; max-width: 200px; border: 2px solid #e0e0e0; border-radius: 12px; margin-bottom: 15px; outline: none; transition: 0.3s; }
+        input:focus { border-color: #3cb371; }
+        
+        button { padding: 15px 25px; font-size: 16px; background-color: #3cb371; color: white; border: none; border-radius: 12px; cursor: pointer; margin: 8px; font-weight: bold; width: 85%; max-width: 250px; transition: 0.2s; }
+        button:active { transform: scale(0.98); background-color: #2e8b57; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        #status { margin: 20px; font-weight: bold; color: #2e8b57; min-height: 40px; }
-        #log { margin-top: 20px; text-align: left; height: 150px; overflow-y: auto; padding: 10px; border-top: 1px solid #eee; font-size: 13px; background: #fafafa; }
-        .win-msg { color: #d9534f; font-size: 18px; }
-        .room-info { background: #e8f5e9; padding: 10px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; }
+        
+        #setup-area button { background-color: #ffffff; color: #3cb371; border: 2px solid #3cb371; }
+        #setup-area button:first-child { background-color: #3cb371; color: white; }
+
+        #status { margin: 20px 0; font-weight: bold; color: #2e8b57; min-height: 50px; font-size: 17px; line-height: 1.4; }
+        #log { margin-top: 25px; text-align: left; height: 180px; overflow-y: auto; padding: 15px; border-radius: 12px; font-size: 14px; background: #f9f9f9; border: 1px solid #eee; }
+        .win-msg { color: #d9534f; font-size: 18px; display: block; margin-bottom: 10px; }
+        .room-info { background: #e8f5e9; padding: 12px; border-radius: 12px; margin-bottom: 20px; font-size: 15px; color: #2e8b57; }
     </style>
 </head>
 <body>
@@ -24,16 +35,16 @@
     
     <div id="setup-area">
         <button onclick="createNewRoom()">새 방 만들기</button>
-        <div style="margin: 15px 0; color: #888;">--- 또는 ---</div>
-        <input type="text" id="roomCodeInput" placeholder="방 번호 4자리">
+        <div style="margin: 15px 0; color: #aaa; font-size: 14px;">또는</div>
+        <input type="tel" id="roomCodeInput" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="방 번호 4자리">
         <button onclick="joinExistingRoom()">방 입장하기</button>
     </div>
 
     <div id="game-area" style="display:none;">
-        <div class="room-info">방 번호: <span id="displayRoomCode" style="font-weight:bold; color: #2e8b57;"></span></div>
+        <div class="room-info">방 번호: <span id="displayRoomCode" style="font-weight:bold;"></span></div>
         <div id="status">대기 중...</div>
         <div id="input-section">
-            <input type="text" id="numberInput" maxlength="3" placeholder="3자리 숫자">
+            <input type="tel" id="numberInput" pattern="[0-9]*" inputmode="numeric" maxlength="3" placeholder="3자리 숫자 입력">
             <button id="actionBtn" onclick="handleAction()">확인</button>
         </div>
         <div id="log"></div>
@@ -59,30 +70,23 @@
     let currentRoomId = ""; 
     let gameState = {};
 
-    // 1. 새 방 만들기
     function createNewRoom() {
         const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
         currentRoomId = randomCode;
         myRole = "player1";
-        
-        db.ref('rooms/' + currentRoomId + '/player1').set({ id: "p1", ready: false })
-          .then(() => startUI(randomCode));
+        db.ref('rooms/' + currentRoomId + '/player1').set({ id: "p1", ready: false }).then(() => startUI(randomCode));
     }
 
-    // 2. 기존 방 입장하기
     function joinExistingRoom() {
         const code = document.getElementById('roomCodeInput').value;
         if (code.length < 4) return alert("방 번호를 입력하세요.");
-        
         db.ref('rooms/' + code).get().then((snapshot) => {
             const data = snapshot.val();
             if (!data) return alert("존재하지 않는 방입니다.");
-            if (data.player2) return alert("이미 가득 찬 방입니다.");
-            
+            if (data.player2) return alert("가득 찬 방입니다.");
             currentRoomId = code;
             myRole = "player2";
-            db.ref('rooms/' + currentRoomId + '/player2').set({ id: "p2", ready: false })
-              .then(() => startUI(code));
+            db.ref('rooms/' + currentRoomId + '/player2').set({ id: "p2", ready: false }).then(() => startUI(code));
         });
     }
 
@@ -102,26 +106,26 @@
 
             if (!gameState) {
                 if (status.innerText.includes("승리")) return;
-                status.innerHTML = "<span class='win-msg'>상대방이 정답을 맞혔습니다! 😭</span><br><button onclick='location.reload()'>초기화면으로</button>";
+                status.innerHTML = "<span class='win-msg'>상대방이 맞혔습니다! 😭</span><button onclick='location.reload()'>처음으로</button>";
                 inputSection.style.display = 'none';
                 return;
             }
 
             if (!gameState.player2) {
-                status.innerText = "상대방을 기다리는 중... (방 번호를 공유하세요)";
+                status.innerText = "상대방을 기다리고 있어요...\n방 번호를 알려주세요!";
                 btn.disabled = true;
             } else if (!gameState.player1.ready || !gameState.player2.ready) {
                 const myReady = gameState[myRole].ready;
-                status.innerText = myReady ? "상대방이 숫자를 고르고 있습니다..." : "숨길 나의 숫자를 정하세요!";
+                status.innerText = myReady ? "상대방의 선택을 기다리는 중..." : "상대방에게 숨길\n나의 숫자를 입력하세요!";
                 btn.disabled = myReady;
-                btn.innerText = "숫자 설정";
+                btn.innerText = "숫자 설정 완료";
             } else {
                 btn.innerText = "공격!";
                 if (gameState.turn === myRole) {
-                    status.innerText = "🔥 당신의 차례입니다!";
+                    status.innerText = "🔥 당신의 차례입니다!\n숫자를 맞춰보세요.";
                     btn.disabled = false;
                 } else {
-                    status.innerText = "💤 상대방의 차례입니다...";
+                    status.innerText = "💤 상대방 차례입니다...\n잠시만 기다려주세요.";
                     btn.disabled = true;
                 }
             }
@@ -136,16 +140,14 @@
             db.ref('rooms/' + currentRoomId + '/' + myRole).update({ ready: true, secret: val });
             if (myRole === "player2") db.ref('rooms/' + currentRoomId).update({ turn: "player1" });
             document.getElementById('numberInput').value = "";
-            addLog(`✅ 수비 숫자 [${val}] 설정 완료!`);
+            addLog(`✅ 내 수비 숫자 [${val}] 설정`);
         } else {
             const opponentRole = myRole === "player1" ? "player2" : "player1";
             const target = gameState[opponentRole].secret;
             const result = checkScore(val, target);
-            
             addLog(`🚀 공격 [${val}]: ${result}`);
-            
             if (result === "3S 0B (홈런!)") {
-                document.getElementById('status').innerHTML = "<span class='win-msg'>🎉 승리했습니다!</span><br><button onclick='location.reload()'>새 게임</button>";
+                document.getElementById('status').innerHTML = "<span class='win-msg'>🎉 승리했습니다!</span><button onclick='location.reload()'>새 게임 하기</button>";
                 document.getElementById('input-section').style.display = 'none';
                 db.ref('rooms/' + currentRoomId).remove(); 
             } else {
