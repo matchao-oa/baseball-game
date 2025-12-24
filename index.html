@@ -2,28 +2,35 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>숫자 야구 멀티플레이</title>
+    <title>멀티 숫자 야구</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background-color: #f0f8f5; padding-top: 50px; }
-        .container { background: white; padding: 20px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input { padding: 10px; font-size: 16px; width: 100px; border: 2px solid #3cb371; border-radius: 5px; }
-        button { padding: 10px 20px; font-size: 16px; background-color: #ddffdd; color: #444447; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
-        button:disabled { background-color: #ccc; }
-        #status { margin: 20px; font-weight: bold; color: #2e8b57; }
-        #log { margin-top: 20px; text-align: left; max-height: 200px; overflow-y: auto; padding: 10px; border-top: 1px solid #eee; font-size: 14px; }
+        .container { background: white; padding: 20px; border-radius: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 350px; }
+        input { padding: 10px; font-size: 16px; width: 120px; border: 2px solid #3cb371; border-radius: 5px; margin-bottom: 10px; }
+        button { padding: 10px 20px; font-size: 16px; background-color: #ddffdd; color: #444447; border: none; border-radius: 5px; cursor: pointer; margin: 5px; font-weight: bold; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #status { margin: 20px; font-weight: bold; color: #2e8b57; min-height: 40px; }
+        #log { margin-top: 20px; text-align: left; height: 150px; overflow-y: auto; padding: 10px; border-top: 1px solid #eee; font-size: 13px; background: #fafafa; }
+        .win-msg { color: #d9534f; font-size: 18px; }
+        .room-info { background: #e8f5e9; padding: 10px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>⚾️ 커스텀 숫자 야구</h2>
-    <div id="setup">
-        <button onclick="joinGame()">게임 입장하기</button>
+    <h2>⚾️ 멀티 숫자 야구</h2>
+    
+    <div id="setup-area">
+        <button onclick="createNewRoom()">새 방 만들기</button>
+        <div style="margin: 15px 0; color: #888;">--- 또는 ---</div>
+        <input type="text" id="roomCodeInput" placeholder="방 번호 4자리">
+        <button onclick="joinExistingRoom()">방 입장하기</button>
     </div>
 
     <div id="game-area" style="display:none;">
+        <div class="room-info">방 번호: <span id="displayRoomCode" style="font-weight:bold; color: #2e8b57;"></span></div>
         <div id="status">대기 중...</div>
         <div id="input-section">
             <input type="text" id="numberInput" maxlength="3" placeholder="3자리 숫자">
@@ -34,7 +41,6 @@
 </div>
 
 <script>
-    // 유저님의 진짜 Firebase 설정이 적용되었습니다!
     const firebaseConfig = {
         apiKey: "AIzaSyBUAnG4KmuGAY0JCVzreb0o5XZd4qjJAZA",
         authDomain: "bullsandcows1004.firebaseapp.com",
@@ -50,46 +56,69 @@
     const db = firebase.database();
 
     let myRole = ""; 
-    let gameId = "room1"; 
+    let currentRoomId = ""; 
     let gameState = {};
 
-    function joinGame() {
-        db.ref('rooms/' + gameId).get().then((snapshot) => {
+    // 1. 새 방 만들기
+    function createNewRoom() {
+        const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
+        currentRoomId = randomCode;
+        myRole = "player1";
+        
+        db.ref('rooms/' + currentRoomId + '/player1').set({ id: "p1", ready: false })
+          .then(() => startUI(randomCode));
+    }
+
+    // 2. 기존 방 입장하기
+    function joinExistingRoom() {
+        const code = document.getElementById('roomCodeInput').value;
+        if (code.length < 4) return alert("방 번호를 입력하세요.");
+        
+        db.ref('rooms/' + code).get().then((snapshot) => {
             const data = snapshot.val();
-            if (!data || !data.player1) {
-                myRole = "player1";
-                db.ref('rooms/' + gameId + '/player1').set({ id: "p1", ready: false });
-            } else if (!data.player2) {
-                myRole = "player2";
-                db.ref('rooms/' + gameId + '/player2').set({ id: "p2", ready: false });
-            } else {
-                alert("방이 가득 찼습니다.");
-                return;
-            }
-            document.getElementById('setup').style.display = 'none';
-            document.getElementById('game-area').style.display = 'block';
-            listenGame();
+            if (!data) return alert("존재하지 않는 방입니다.");
+            if (data.player2) return alert("이미 가득 찬 방입니다.");
+            
+            currentRoomId = code;
+            myRole = "player2";
+            db.ref('rooms/' + currentRoomId + '/player2').set({ id: "p2", ready: false })
+              .then(() => startUI(code));
         });
     }
 
+    function startUI(code) {
+        document.getElementById('setup-area').style.display = 'none';
+        document.getElementById('game-area').style.display = 'block';
+        document.getElementById('displayRoomCode').innerText = code;
+        listenGame();
+    }
+
     function listenGame() {
-        db.ref('rooms/' + gameId).on('value', (snapshot) => {
-            gameState = snapshot.val() || {};
+        db.ref('rooms/' + currentRoomId).on('value', (snapshot) => {
+            gameState = snapshot.val();
             const status = document.getElementById('status');
             const btn = document.getElementById('actionBtn');
+            const inputSection = document.getElementById('input-section');
+
+            if (!gameState) {
+                if (status.innerText.includes("승리")) return;
+                status.innerHTML = "<span class='win-msg'>상대방이 정답을 맞혔습니다! 😭</span><br><button onclick='location.reload()'>초기화면으로</button>";
+                inputSection.style.display = 'none';
+                return;
+            }
 
             if (!gameState.player2) {
-                status.innerText = "상대방을 기다리는 중...";
+                status.innerText = "상대방을 기다리는 중... (방 번호를 공유하세요)";
                 btn.disabled = true;
             } else if (!gameState.player1.ready || !gameState.player2.ready) {
                 const myReady = gameState[myRole].ready;
-                status.innerText = myReady ? "상대방이 숫자를 고르고 있습니다..." : "상대방에게 숨길 나의 숫자를 입력하세요!";
+                status.innerText = myReady ? "상대방이 숫자를 고르고 있습니다..." : "숨길 나의 숫자를 정하세요!";
                 btn.disabled = myReady;
                 btn.innerText = "숫자 설정";
             } else {
                 btn.innerText = "공격!";
                 if (gameState.turn === myRole) {
-                    status.innerText = "🔥 당신의 차례입니다! 상대의 숫자를 맞혀보세요.";
+                    status.innerText = "🔥 당신의 차례입니다!";
                     btn.disabled = false;
                 } else {
                     status.innerText = "💤 상대방의 차례입니다...";
@@ -104,26 +133,23 @@
         if (val.length !== 3 || isNaN(val)) return alert("3자리 숫자를 입력하세요!");
 
         if (!gameState[myRole].ready) {
-            db.ref('rooms/' + gameId + '/' + myRole).update({
-                ready: true,
-                secret: val
-            });
-            if (myRole === "player2") db.ref('rooms/' + gameId).update({ turn: "player1" });
+            db.ref('rooms/' + currentRoomId + '/' + myRole).update({ ready: true, secret: val });
+            if (myRole === "player2") db.ref('rooms/' + currentRoomId).update({ turn: "player1" });
             document.getElementById('numberInput').value = "";
-            addLog(`✅ 나의 수비 숫자 [${val}] 설정 완료!`);
+            addLog(`✅ 수비 숫자 [${val}] 설정 완료!`);
         } else {
             const opponentRole = myRole === "player1" ? "player2" : "player1";
             const target = gameState[opponentRole].secret;
             const result = checkScore(val, target);
             
-            addLog(`🚀 나의 공격 [${val}]: ${result}`);
+            addLog(`🚀 공격 [${val}]: ${result}`);
             
-            if (result === "3 스트라이크! 홈런!") {
-                alert("축하합니다! 승리하셨습니다!");
-                db.ref('rooms/' + gameId).remove(); 
-                location.reload();
+            if (result === "3S 0B (홈런!)") {
+                document.getElementById('status').innerHTML = "<span class='win-msg'>🎉 승리했습니다!</span><br><button onclick='location.reload()'>새 게임</button>";
+                document.getElementById('input-section').style.display = 'none';
+                db.ref('rooms/' + currentRoomId).remove(); 
             } else {
-                db.ref('rooms/' + gameId).update({ turn: opponentRole });
+                db.ref('rooms/' + currentRoomId).update({ turn: opponentRole });
             }
             document.getElementById('numberInput').value = "";
         }
@@ -135,7 +161,7 @@
             if (input[i] === target[i]) s++;
             else if (target.includes(input[i])) b++;
         }
-        if (s === 3) return "3 스트라이크! 홈런!";
+        if (s === 3) return "3S 0B (홈런!)";
         return `${s}S ${b}B`;
     }
 
