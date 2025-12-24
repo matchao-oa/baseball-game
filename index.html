@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>실시간 멀티 숫자야구</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f3ffe3; padding: 20px; }
+        .container { max-width: 450px; margin: 0 auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .btn-group { margin: 20px 0; }
+        button { padding: 12px 24px; font-size: 16px; cursor: pointer; background: #c4faf8; color: #444447; border: none; border-radius: 8px; margin: 5px; transition: 0.3s; }
+        button:hover { background: #b0e9e7; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        input { padding: 12px; font-size: 18px; width: 120px; text-align: center; border: 2px solid #ddd; border-radius: 8px; outline: none; }
+        .log { margin-top: 25px; height: 250px; overflow-y: auto; background: #f9f9f9; border-radius: 10px; padding: 15px; border: 1px solid #eee; }
+        .status { font-weight: bold; font-size: 1.1rem; margin-bottom: 20px; color: #333; }
+        .my-turn { color: #e74c3c; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>⚾️ 숫자 야구</h2>
+    <div id="setup">
+        <p>게임을 선택하세요</p>
+        <div class="btn-group">
+            <button onclick="joinGame(3)">3자리 게임 입장</button>
+            <button onclick="joinGame(4)">4자리 게임 입장</button>
+        </div>
+    </div>
+    <div id="game-area" style="display:none;">
+        <div id="turn-display" class="status">상대방 입장 대기 중...</div>
+        <div id="input-section" style="display:none;">
+            <input type="text" id="guess-input" placeholder="숫자 입력">
+            <button id="send-btn" onclick="submitGuess()">입력</button>
+        </div>
+        <div class="log" id="game-log"></div>
+    </div>
+</div>
+<script>
+    const firebaseConfig = {
+        databaseURL: "https://bullsandcows1004-default-rtdb.firebaseio.com/"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let myRole = ""; 
+    let gameDigit = 3;
+    let mySecret = "";
+    const gameId = "game_room_1";
+
+    function joinGame(digit) {
+        gameDigit = digit;
+        document.getElementById('guess-input').maxLength = digit;
+        mySecret = generateRandom(digit);
+        db.ref(gameId).once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) {
+                myRole = "player1";
+                db.ref(gameId).set({
+                    player1_secret: mySecret,
+                    digit: digit,
+                    turn: "player1",
+                    status: "waiting",
+                    history: []
+                });
+            } else if (data.status === "waiting") {
+                myRole = "player2";
+                db.ref(gameId).update({
+                    player2_secret: mySecret,
+                    status: "playing"
+                });
+            } else {
+                alert("이미 진행 중인 게임이 있습니다.");
+                return;
+            }
+            startUI();
+        });
+    }
+
+    function startUI() {
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('game-area').style.display = 'block';
+        db.ref(gameId).on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            const turnDisplay = document.getElementById('turn-display');
+            const inputSection = document.getElementById('input-section');
+            if (data.status === "waiting") {
+                turnDisplay.innerText = "상대방을 기다리고 있습니다...";
+                inputSection.style.display = 'none';
+            } else {
+                const isMyTurn = data.turn === myRole;
+                turnDisplay.innerText = isMyTurn ? "🔥 당신의 차례입니다!" : "⏳ 상대방의 차례입니다...";
+                turnDisplay.className = isMyTurn ? "status my-turn" : "status";
+                inputSection.style.display = 'block';
+                document.getElementById('send-btn').disabled = !isMyTurn;
+            }
+            if (data.history) {
+                const logDiv = document.getElementById('game-log');
+                logDiv.innerHTML = "";
+                Object.values(data.history).reverse().forEach(h => {
+                    const who = h.user === myRole ? "나" : "상대";
+                    logDiv.innerHTML += `<p><strong>[${who}]</strong> ${h.val} → <span style="color:#2980b9">${h.result}</span></p>`;
+                });
+            }
+        });
+    }
+
+    function submitGuess() {
+        const val = document.getElementById('guess-input').value;
+        if (val.length !== gameDigit || new Set(val).size !== gameDigit) {
+            alert(`중복 없는 ${gameDigit}자리 숫자를 입력하세요!`);
+            return;
+        }
+        db.ref(gameId).once('value', (snapshot) => {
+            const data = snapshot.val();
+            const opponentSecret = (myRole === "player1") ? data.player2_secret : data.player1_secret;
+            const result = calculateSB(opponentSecret, val);
+            const nextTurn = (myRole === "player1") ? "player2" : "player1";
+            db.ref(`${gameId}/history`).push({ user: myRole, val: val, result: result });
+            if (result.includes("홈런")) {
+                alert("🎉 홈런! 승리했습니다!");
+                db.ref(gameId).remove();
+                location.reload();
+            } else {
+                db.ref(gameId).update({ turn: nextTurn });
+            }
+            document.getElementById('guess-input').value = "";
+        });
+    }
+
+    function generateRandom(n) {
+        let nums = [0,1,2,3,4,5,6,7,8,9], res = [];
+        for(let i=0; i<n; i++) res.push(nums.splice(Math.floor(Math.random()*nums.length), 1)[0]);
+        return res.join('');
+    }
+
+    function calculateSB(target, guess) {
+        let s = 0, b = 0;
+        const tArr = target.split(''), gArr = guess.split('');
+        gArr.forEach((v, i) => {
+            if (v === tArr[i]) s++; else if (tArr.includes(v)) b++;
+        });
+        return s === gameDigit ? "🎉 홈런!" : `${s}Strike ${b}Ball`;
+    }
+</script>
+</body>
+</html>
