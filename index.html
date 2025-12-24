@@ -3,20 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>멀티 숫자 야구 Pro - Final Fixed</title>
+    <title>멀티 숫자 야구 Pro - Bug Free</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root {
-            --bg-color: #f0f8f5;
-            --container-bg: #C1B098;
-            --point-color: #DBDBDB;
-            --btn-bg: #FBF2C0;
-            --btn-text: #48392A;
-            --text-color: #48392A;
-            --accent-color: #d9534f;
+            --bg-color: #f0f8f5; --container-bg: #C1B098; --point-color: #DBDBDB;
+            --btn-bg: #FBF2C0; --btn-text: #48392A; --text-color: #48392A; --accent-color: #d9534f;
         }
-
         body { font-family: 'Pretendard', sans-serif; text-align: center; background-color: var(--bg-color); margin: 0; padding: 20px; box-sizing: border-box; color: var(--text-color); }
         .container { background: var(--container-bg); padding: 25px 15px; border-radius: 25px; max-width: 400px; margin: 0 auto; box-shadow: 0 12px 30px rgba(0,0,0,0.15); }
         h2 { color: var(--text-color); margin-bottom: 20px; font-size: 26px; }
@@ -78,7 +72,7 @@
 
     let myRole = "", currentRoomId = "", gameState = {}, digits = 3, lastTurn = "";
     let tryCount = 0;
-    let isGameOver = false; // 승패 구분용 변수 추가
+    let isGameOver = false; 
 
     function playSound(type) {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -103,7 +97,7 @@
         const code = Math.floor(1000 + Math.random() * 9000).toString();
         digits = parseInt(document.getElementById('digitSelect').value);
         currentRoomId = code; myRole = "player1";
-        db.ref('rooms/' + code).set({ digits, player1: { id: "p1", ready: false } }).then(() => startUI(code, digits));
+        db.ref('rooms/' + code).set({ digits, player1: { id: "p1", ready: false }, winner: "" }).then(() => startUI(code, digits));
     }
 
     function joinExistingRoom() {
@@ -129,15 +123,18 @@
 
     function listenGame() {
         db.ref('rooms/' + currentRoomId).on('value', (s) => {
-            if (isGameOver) return; // 내가 이미 이겼다면 더 이상 업데이트 안 함
+            if (isGameOver) return; 
 
             gameState = s.val();
             const status = document.getElementById('status'), btn = document.getElementById('actionBtn'), inputSection = document.getElementById('input-section');
             
-            if (!gameState) {
-                // 방 데이터가 사라졌는데, 내가 이긴 게 아니라면 상대가 이긴 것임
-                status.innerHTML = "<span class='win-msg'>상대방이 정답을 맞혔습니다! 😭</span><button onclick='location.reload()'>메인으로</button>";
-                inputSection.style.display = 'none'; 
+            if (!gameState || (gameState.winner && gameState.winner !== "")) {
+                // 승자가 정해졌는데 내가 아니라면
+                if (gameState && gameState.winner !== myRole) {
+                    isGameOver = true;
+                    status.innerHTML = "<span class='win-msg'>상대방이 정답을 맞혔습니다! 😭</span><button onclick='location.reload()'>메인으로</button>";
+                    inputSection.style.display = 'none'; 
+                }
                 return;
             }
 
@@ -176,11 +173,14 @@
             addLog(`🚀 ${tryCount}회차 공격 [${val}]: ${res}`);
             
             if (res === digits + "S 0B (홈런!)") {
-                isGameOver = true; // 내가 이겼음을 표시
+                isGameOver = true; 
+                document.getElementById('actionBtn').disabled = true; // 동시 클릭 방지
                 playSound('win');
                 document.getElementById('status').innerHTML = `<span class='win-msg'>🎉 축하합니다! ${tryCount}번 만에 홈런!</span><button onclick='location.reload()'>새 게임 하기</button>`;
                 document.getElementById('input-section').style.display = 'none';
-                db.ref('rooms/' + currentRoomId).remove(); 
+                
+                // 내가 승리했음을 서버에 내 역할(myRole)과 함께 명시적으로 기록
+                db.ref('rooms/' + currentRoomId).update({ winner: myRole });
             } else {
                 db.ref('rooms/' + currentRoomId).update({ turn: opp });
             }
