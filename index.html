@@ -3,34 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>멀티 숫자 야구 Pro</title>
+    <title>멀티 숫자 야구 Pro - Count Edition</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body { font-family: 'Pretendard', sans-serif; text-align: center; background-color: #f0f8f5; margin: 0; padding: 20px; box-sizing: border-box; }
-        .container { background: white; padding: 25px 15px; border-radius: 20px; display: block; max-width: 400px; margin: 0 auto; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
-        h2 { color: #2e8b57; margin-bottom: 20px; font-size: 24px; }
-        .setup-box { margin-bottom: 15px; background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #eee; }
-        label { font-size: 14px; color: #666; display: block; margin-bottom: 8px; font-weight: bold; }
-        input, select { padding: 15px; font-size: 18px; width: 85%; max-width: 200px; border: 2px solid #e0e0e0; border-radius: 12px; margin-bottom: 10px; outline: none; text-align: center; background: white; }
-        input:focus { border-color: #3cb371; }
-        button { padding: 15px 25px; font-size: 16px; background-color: #3cb371; color: white; border: none; border-radius: 12px; cursor: pointer; margin: 8px; font-weight: bold; width: 90%; max-width: 250px; transition: 0.2s; }
-        button:active { transform: scale(0.98); }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        #status { margin: 20px 0; font-weight: bold; color: #2e8b57; min-height: 60px; font-size: 17px; white-space: pre-wrap; line-height: 1.5; }
-        #log { margin-top: 20px; text-align: left; height: 180px; overflow-y: auto; padding: 15px; border-radius: 12px; font-size: 14px; background: #fafafa; border: 1px solid #eee; }
-        .win-msg { color: #d9534f; font-size: 20px; font-weight: bold; display: block; margin-bottom: 15px; }
-        .room-info { background: #e8f5e9; padding: 12px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; color: #2e8b57; border: 1px solid #c8e6c9; }
+        :root {
+            --bg-color: #f0f8f5;
+            --container-bg: #C1B098;
+            --point-color: #DBDBDB;
+            --btn-bg: #FBF2C0;
+            --btn-text: #48392A;
+            --text-color: #48392A;
+            --accent-color: #d9534f;
+        }
+
+        body { 
+            font-family: 'Pretendard', sans-serif; 
+            text-align: center; 
+            background-color: var(--bg-color); 
+            margin: 0; padding: 20px; 
+            box-sizing: border-box; 
+            color: var(--text-color);
+        }
+        
+        .container { 
+            background: var(--container-bg); 
+            padding: 25px 15px; 
+            border-radius: 25px; 
+            max-width: 400px; 
+            margin: 0 auto; 
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15); 
+        }
+        
+        h2 { color: var(--text-color); margin-bottom: 20px; font-size: 26px; }
+        
+        .setup-box, .room-info { 
+            margin-bottom: 15px; 
+            background: var(--point-color); 
+            padding: 18px; 
+            border-radius: 15px; 
+            border: 1px solid rgba(0,0,0,0.05);
+            color: var(--text-color);
+        }
+        
+        label { font-size: 14px; display: block; margin-bottom: 8px; font-weight: bold; }
+        
+        input, select { 
+            padding: 15px; 
+            font-size: 18px; 
+            width: 85%; 
+            max-width: 220px; 
+            border: none; 
+            border-radius: 12px; 
+            margin-bottom: 10px; 
+            outline: none; 
+            text-align: center; 
+            background: white;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        button { 
+            padding: 16px 20px; 
+            font-size: 16px; 
+            background-color: var(--btn-bg) !important; 
+            color: var(--btn-text) !important; 
+            border: 1px solid rgba(0,0,0,0.1) !important; 
+            border-radius: 14px; 
+            cursor: pointer; 
+            margin: 8px; 
+            font-weight: bold; 
+            width: 90%; 
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+        }
+        
+        button:hover { filter: brightness(1.05); }
+        button:active { transform: translateY(2px); box-shadow: none; }
+        button:disabled { background-color: #bbb !important; color: #777 !important; transform: none; box-shadow: none; cursor: not-allowed; }
+
+        #status { margin: 20px 0; font-weight: bold; min-height: 70px; font-size: 18px; line-height: 1.4; }
+        
+        #log { 
+            margin-top: 20px; 
+            text-align: left; 
+            height: 180px; 
+            overflow-y: auto; 
+            padding: 15px; 
+            border-radius: 15px; 
+            font-size: 14px; 
+            background: rgba(255,255,255,0.4); 
+            border: 1px solid rgba(255,255,255,0.5); 
+        }
+        
+        .win-msg { color: var(--accent-color); font-size: 22px; font-weight: 800; display: block; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>⚾️ 멀티 숫자 야구</h2>
+    <h2>⚾️ 멀티 숫자 야구 ⚾️</h2>
     
     <div id="setup-area">
         <div class="setup-box">
-            <label>난이도 설정</label>
+            <label>난이도 선택</label>
             <select id="digitSelect">
                 <option value="3">3자리 (보통)</option>
                 <option value="4">4자리 (어려움)</option>
@@ -38,19 +113,19 @@
             </select>
             <button onclick="createNewRoom()">새 방 만들기</button>
         </div>
-        <div style="margin: 15px 0; color: #aaa; font-size: 14px;">또는 기존 방 입장</div>
+        <div style="margin: 15px 0; font-weight: bold; opacity: 0.7;">OR</div>
         <div class="setup-box">
             <input type="tel" id="roomCodeInput" maxlength="4" placeholder="방 번호 4자리">
-            <button onclick="joinExistingRoom()" style="background-color: white; color: #3cb371; border: 2px solid #3cb371;">입장하기</button>
+            <button onclick="joinExistingRoom()">입장하기</button>
         </div>
     </div>
 
     <div id="game-area" style="display:none;">
         <div class="room-info">
-            방 번호: <span id="displayRoomCode" style="font-weight:bold;"></span> | 
-            <span id="displayDigits" style="font-weight:bold; color: #d9534f;"></span>자리 게임
+            방 번호: <span id="displayRoomCode" style="font-weight:900;"></span> | 
+            <span id="displayDigits" style="font-weight:900; color: var(--accent-color);"></span>자리 모드
         </div>
-        <div id="status">연결 중...</div>
+        <div id="status">대기 중...</div>
         <div id="input-section">
             <input type="tel" id="numberInput" inputmode="numeric" placeholder="숫자 입력">
             <button id="actionBtn" onclick="handleAction()">확인</button>
@@ -73,104 +148,79 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let myRole = ""; 
-    let currentRoomId = ""; 
-    let gameState = {};
-    let digits = 3;
-    let lastTurn = "";
+    let myRole = "", currentRoomId = "", gameState = {}, digits = 3, lastTurn = "";
+    let tryCount = 0; // 시도 횟수 변수 추가
 
-    // 🔊 주파수 사운드 엔진 (띠링 vs 홈런)
     function playSound(type) {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
         if (type === 'turn') {
-            // [띠링!] - 고음 벨소리
-            [1046.50, 1567.98].forEach((freq, i) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (i * 0.08));
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime + (i * 0.08));
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (i * 0.08) + 0.1);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(audioCtx.currentTime + (i * 0.08));
-                osc.stop(audioCtx.currentTime + (i * 0.08) + 0.1);
+            [1046.50, 1567.98].forEach((f, i) => {
+                const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                o.type = 'sine'; o.frequency.setValueAtTime(f, audioCtx.currentTime + (i * 0.08));
+                g.gain.setValueAtTime(0.1, audioCtx.currentTime + (i * 0.08));
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (i * 0.08) + 0.1);
+                o.connect(g); g.connect(audioCtx.destination); o.start(audioCtx.currentTime + (i * 0.08)); o.stop(audioCtx.currentTime + (i * 0.08) + 0.1);
             });
         } else if (type === 'win') {
-            // [홈런!] - 웅장한 사이렌 팡파르
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth'; 
-            osc.frequency.setValueAtTime(220, audioCtx.currentTime); 
-            osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.8); 
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 1.2);
+            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            o.type = 'sawtooth'; o.frequency.setValueAtTime(220, audioCtx.currentTime); 
+            o.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.8); 
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
+            o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 1.2);
         }
     }
 
     function createNewRoom() {
-        const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
         digits = parseInt(document.getElementById('digitSelect').value);
-        currentRoomId = randomCode;
-        myRole = "player1";
-        db.ref('rooms/' + currentRoomId).set({ digits: digits, player1: { id: "p1", ready: false } }).then(() => startUI(randomCode, digits));
+        currentRoomId = code; myRole = "player1";
+        db.ref('rooms/' + code).set({ digits, player1: { id: "p1", ready: false } }).then(() => startUI(code, digits));
     }
 
     function joinExistingRoom() {
         const code = document.getElementById('roomCodeInput').value;
         if (code.length < 4) return alert("방 번호 4자리를 입력하세요.");
-        db.ref('rooms/' + code).get().then((snapshot) => {
-            const data = snapshot.val();
-            if (!data) return alert("존재하지 않는 방입니다.");
-            if (data.player2) return alert("이미 대결 중인 방입니다.");
-            currentRoomId = code; myRole = "player2"; digits = data.digits;
-            db.ref('rooms/' + currentRoomId + '/player2').set({ id: "p2", ready: false }).then(() => startUI(code, digits));
+        db.ref('rooms/' + code).get().then((s) => {
+            const d = s.val();
+            if (!d) return alert("존재하지 않는 방입니다.");
+            if (d.player2) return alert("이미 대결 중인 방입니다.");
+            currentRoomId = code; myRole = "player2"; digits = d.digits;
+            db.ref('rooms/' + code + '/player2').set({ id: "p2", ready: false }).then(() => startUI(code, digits));
         });
     }
 
-    function startUI(code, d) {
+    function startUI(c, d) {
         document.getElementById('setup-area').style.display = 'none';
         document.getElementById('game-area').style.display = 'block';
-        document.getElementById('displayRoomCode').innerText = code;
+        document.getElementById('displayRoomCode').innerText = c;
         document.getElementById('displayDigits').innerText = d;
         document.getElementById('numberInput').maxLength = d;
         listenGame();
     }
 
     function listenGame() {
-        db.ref('rooms/' + currentRoomId).on('value', (snapshot) => {
-            gameState = snapshot.val();
-            const status = document.getElementById('status');
-            const btn = document.getElementById('actionBtn');
-            const inputSection = document.getElementById('input-section');
-
+        db.ref('rooms/' + currentRoomId).on('value', (s) => {
+            gameState = s.val();
+            const status = document.getElementById('status'), btn = document.getElementById('actionBtn'), inputSection = document.getElementById('input-section');
             if (!gameState) {
                 if (status.innerText.includes("승리")) return;
-                status.innerHTML = "<span class='win-msg'>상대방이 홈런을 쳤습니다! 😭</span><button onclick='location.reload()'>처음으로</button>";
-                inputSection.style.display = 'none';
-                return;
+                status.innerHTML = "<span class='win-msg'>상대방이 정답을 맞혔습니다! 😭</span><button onclick='location.reload()'>메인으로</button>";
+                inputSection.style.display = 'none'; return;
             }
-
             if (!gameState.player2) {
-                status.innerText = "상대방을 기다리고 있어요...\n방 번호 ["+currentRoomId+"]를 알려주세요!";
+                status.innerText = "상대를 기다리는 중...\n방 번호 ["+currentRoomId+"]를 공유하세요!";
                 btn.disabled = true;
             } else if (!gameState.player1.ready || !gameState.player2.ready) {
                 const myReady = gameState[myRole].ready;
-                status.innerText = myReady ? "상대방이 숫자를 고르는 중..." : "상대방에게 숨길\n"+digits+"자리 숫자를 입력하세요!";
-                btn.disabled = myReady;
-                btn.innerText = "숫자 설정 완료";
+                status.innerText = myReady ? "상대방이 숫자를 고르고 있어요..." : "상대에게 숨길\n"+digits+"자리 숫자를 입력하세요!";
+                btn.disabled = myReady; btn.innerText = "숫자 설정 완료";
             } else {
                 btn.innerText = "공격!";
                 if (gameState.turn === myRole) {
-                    status.innerText = "🔥 당신의 차례입니다!\n상대방의 숫자를 맞춰보세요.";
-                    btn.disabled = false;
+                    status.innerText = "🔥 내 차례입니다! (공격 "+(tryCount+1)+"회차)\n정답을 추측해보세요."; btn.disabled = false;
                     if (lastTurn !== myRole) { playSound('turn'); lastTurn = myRole; }
                 } else {
-                    status.innerText = "💤 상대방의 차례입니다...\n신중하게 기다려주세요.";
-                    btn.disabled = true;
-                    lastTurn = gameState.turn;
+                    status.innerText = "💤 상대방의 차례...\n신중하게 기다려주세요."; btn.disabled = true; lastTurn = gameState.turn;
                 }
             }
         });
@@ -178,7 +228,7 @@
 
     function handleAction() {
         const val = document.getElementById('numberInput').value;
-        if (val.length !== digits || isNaN(val)) return alert(digits + "자리 숫자를 정확히 입력하세요!");
+        if (val.length !== digits || isNaN(val)) return alert(digits + "자리 숫자를 입력하세요!");
         
         if (!gameState[myRole].ready) {
             db.ref('rooms/' + currentRoomId + '/' + myRole).update({ ready: true, secret: val });
@@ -186,18 +236,18 @@
             document.getElementById('numberInput').value = "";
             addLog(`✅ 내 수비 숫자 [${val}] 설정 완료`);
         } else {
-            const opponentRole = myRole === "player1" ? "player2" : "player1";
-            const target = gameState[opponentRole].secret;
-            const result = checkScore(val, target);
-            addLog(`🚀 공격 [${val}]: ${result}`);
+            const opp = myRole === "player1" ? "player2" : "player1";
+            tryCount++; // 공격할 때마다 횟수 증가
+            const res = checkScore(val, gameState[opp].secret);
+            addLog(`🚀 ${tryCount}회차 공격 [${val}]: ${res}`);
             
-            if (result === digits + "S 0B (홈런!)") {
+            if (res === digits + "S 0B (홈런!)") {
                 playSound('win');
-                document.getElementById('status').innerHTML = "<span class='win-msg'>🎉 축하합니다! 홈런입니다!</span><button onclick='location.reload()'>다시 하기</button>";
+                document.getElementById('status').innerHTML = `<span class='win-msg'>🎉 축하합니다! ${tryCount}번 만에 홈런!</span><button onclick='location.reload()'>새 게임 하기</button>`;
                 document.getElementById('input-section').style.display = 'none';
                 db.ref('rooms/' + currentRoomId).remove(); 
             } else {
-                db.ref('rooms/' + currentRoomId).update({ turn: opponentRole });
+                db.ref('rooms/' + currentRoomId).update({ turn: opp });
             }
             document.getElementById('numberInput').value = "";
         }
@@ -209,8 +259,7 @@
             if (input[i] === target[i]) s++;
             else if (target.includes(input[i])) b++;
         }
-        if (s === digits) return digits + "S 0B (홈런!)";
-        return `${s}S ${b}B`;
+        return s === digits ? digits + "S 0B (홈런!)" : `${s}S ${b}B`;
     }
 
     function addLog(msg) {
@@ -218,6 +267,5 @@
         log.innerHTML = `<div>${msg}</div>` + log.innerHTML;
     }
 </script>
-
 </body>
 </html>
