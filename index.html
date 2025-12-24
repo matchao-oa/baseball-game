@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>멀티 숫자 야구 Pro - Count Edition</title>
+    <title>멀티 숫자 야구 Pro - Final Fixed</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
@@ -17,84 +17,17 @@
             --accent-color: #d9534f;
         }
 
-        body { 
-            font-family: 'Pretendard', sans-serif; 
-            text-align: center; 
-            background-color: var(--bg-color); 
-            margin: 0; padding: 20px; 
-            box-sizing: border-box; 
-            color: var(--text-color);
-        }
-        
-        .container { 
-            background: var(--container-bg); 
-            padding: 25px 15px; 
-            border-radius: 25px; 
-            max-width: 400px; 
-            margin: 0 auto; 
-            box-shadow: 0 12px 30px rgba(0,0,0,0.15); 
-        }
-        
+        body { font-family: 'Pretendard', sans-serif; text-align: center; background-color: var(--bg-color); margin: 0; padding: 20px; box-sizing: border-box; color: var(--text-color); }
+        .container { background: var(--container-bg); padding: 25px 15px; border-radius: 25px; max-width: 400px; margin: 0 auto; box-shadow: 0 12px 30px rgba(0,0,0,0.15); }
         h2 { color: var(--text-color); margin-bottom: 20px; font-size: 26px; }
-        
-        .setup-box, .room-info { 
-            margin-bottom: 15px; 
-            background: var(--point-color); 
-            padding: 18px; 
-            border-radius: 15px; 
-            border: 1px solid rgba(0,0,0,0.05);
-            color: var(--text-color);
-        }
-        
+        .setup-box, .room-info { margin-bottom: 15px; background: var(--point-color); padding: 18px; border-radius: 15px; border: 1px solid rgba(0,0,0,0.05); color: var(--text-color); }
         label { font-size: 14px; display: block; margin-bottom: 8px; font-weight: bold; }
-        
-        input, select { 
-            padding: 15px; 
-            font-size: 18px; 
-            width: 85%; 
-            max-width: 220px; 
-            border: none; 
-            border-radius: 12px; 
-            margin-bottom: 10px; 
-            outline: none; 
-            text-align: center; 
-            background: white;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        button { 
-            padding: 16px 20px; 
-            font-size: 16px; 
-            background-color: var(--btn-bg) !important; 
-            color: var(--btn-text) !important; 
-            border: 1px solid rgba(0,0,0,0.1) !important; 
-            border-radius: 14px; 
-            cursor: pointer; 
-            margin: 8px; 
-            font-weight: bold; 
-            width: 90%; 
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
-        }
-        
-        button:hover { filter: brightness(1.05); }
+        input, select { padding: 15px; font-size: 18px; width: 85%; max-width: 220px; border: none; border-radius: 12px; margin-bottom: 10px; outline: none; text-align: center; background: white; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+        button { padding: 16px 20px; font-size: 16px; background-color: var(--btn-bg) !important; color: var(--btn-text) !important; border: 1px solid rgba(0,0,0,0.1) !important; border-radius: 14px; cursor: pointer; margin: 8px; font-weight: bold; width: 90%; transition: all 0.2s ease; box-shadow: 0 4px 0 rgba(0,0,0,0.1); }
         button:active { transform: translateY(2px); box-shadow: none; }
         button:disabled { background-color: #bbb !important; color: #777 !important; transform: none; box-shadow: none; cursor: not-allowed; }
-
         #status { margin: 20px 0; font-weight: bold; min-height: 70px; font-size: 18px; line-height: 1.4; }
-        
-        #log { 
-            margin-top: 20px; 
-            text-align: left; 
-            height: 180px; 
-            overflow-y: auto; 
-            padding: 15px; 
-            border-radius: 15px; 
-            font-size: 14px; 
-            background: rgba(255,255,255,0.4); 
-            border: 1px solid rgba(255,255,255,0.5); 
-        }
-        
+        #log { margin-top: 20px; text-align: left; height: 180px; overflow-y: auto; padding: 15px; border-radius: 15px; font-size: 14px; background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.5); }
         .win-msg { color: var(--accent-color); font-size: 22px; font-weight: 800; display: block; margin-bottom: 15px; }
     </style>
 </head>
@@ -102,7 +35,6 @@
 
 <div class="container">
     <h2>⚾️ 멀티 숫자 야구 ⚾️</h2>
-    
     <div id="setup-area">
         <div class="setup-box">
             <label>난이도 선택</label>
@@ -119,12 +51,8 @@
             <button onclick="joinExistingRoom()">입장하기</button>
         </div>
     </div>
-
     <div id="game-area" style="display:none;">
-        <div class="room-info">
-            방 번호: <span id="displayRoomCode" style="font-weight:900;"></span> | 
-            <span id="displayDigits" style="font-weight:900; color: var(--accent-color);"></span>자리 모드
-        </div>
+        <div class="room-info">방 번호: <span id="displayRoomCode" style="font-weight:900;"></span> | <span id="displayDigits" style="font-weight:900; color: var(--accent-color);"></span>자리 모드</div>
         <div id="status">대기 중...</div>
         <div id="input-section">
             <input type="tel" id="numberInput" inputmode="numeric" placeholder="숫자 입력">
@@ -149,7 +77,8 @@
     const db = firebase.database();
 
     let myRole = "", currentRoomId = "", gameState = {}, digits = 3, lastTurn = "";
-    let tryCount = 0; // 시도 횟수 변수 추가
+    let tryCount = 0;
+    let isGameOver = false; // 승패 구분용 변수 추가
 
     function playSound(type) {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -200,13 +129,18 @@
 
     function listenGame() {
         db.ref('rooms/' + currentRoomId).on('value', (s) => {
+            if (isGameOver) return; // 내가 이미 이겼다면 더 이상 업데이트 안 함
+
             gameState = s.val();
             const status = document.getElementById('status'), btn = document.getElementById('actionBtn'), inputSection = document.getElementById('input-section');
+            
             if (!gameState) {
-                if (status.innerText.includes("승리")) return;
+                // 방 데이터가 사라졌는데, 내가 이긴 게 아니라면 상대가 이긴 것임
                 status.innerHTML = "<span class='win-msg'>상대방이 정답을 맞혔습니다! 😭</span><button onclick='location.reload()'>메인으로</button>";
-                inputSection.style.display = 'none'; return;
+                inputSection.style.display = 'none'; 
+                return;
             }
+
             if (!gameState.player2) {
                 status.innerText = "상대를 기다리는 중...\n방 번호 ["+currentRoomId+"]를 공유하세요!";
                 btn.disabled = true;
@@ -237,11 +171,12 @@
             addLog(`✅ 내 수비 숫자 [${val}] 설정 완료`);
         } else {
             const opp = myRole === "player1" ? "player2" : "player1";
-            tryCount++; // 공격할 때마다 횟수 증가
+            tryCount++;
             const res = checkScore(val, gameState[opp].secret);
             addLog(`🚀 ${tryCount}회차 공격 [${val}]: ${res}`);
             
             if (res === digits + "S 0B (홈런!)") {
+                isGameOver = true; // 내가 이겼음을 표시
                 playSound('win');
                 document.getElementById('status').innerHTML = `<span class='win-msg'>🎉 축하합니다! ${tryCount}번 만에 홈런!</span><button onclick='location.reload()'>새 게임 하기</button>`;
                 document.getElementById('input-section').style.display = 'none';
